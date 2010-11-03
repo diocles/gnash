@@ -40,18 +40,23 @@
 // The name must be this value to get flash movies that check the
 // plugin version to load.
 #define PLUGIN_NAME    "Shockwave Flash"
-#define MIME_TYPES_DESCRIPTION  MIME_TYPES_HANDLED":swf:"PLUGIN_NAME
 
 // Some javascript plugin detectors use the description
 // to decide the flash version to display. They expect the
-// form (major version).(minor version) r(revision).
-// e.g. "8.0 r99."
+// form (major version).(minor version) r(revision)
+// e.g. "8.0 r99"
 #define FLASH_VERSION DEFAULT_FLASH_MAJOR_VERSION"."\
-    DEFAULT_FLASH_MINOR_VERSION" r"DEFAULT_FLASH_REV_NUMBER"."
+    DEFAULT_FLASH_MINOR_VERSION" r"DEFAULT_FLASH_REV_NUMBER
 
-#define PLUGIN_DESCRIPTION \
-  "Shockwave Flash "FLASH_VERSION"<br>Gnash "VERSION", the GNU SWF Player. \
-  Copyright (C) 2006, 2007, 2008, 2009, 2010 \
+#define PLUGIN_DESCRIPTION "Shockwave Flash "FLASH_VERSION
+
+#define FAKE_MIME_TYPE "application/x-gnash-plugin"
+
+// Note that we cannot use parentheses or semicolons when this is used
+// inside MIME_TYPES_DESCRIPTION.
+#define FAKE_MIME_TYPE_DESCRIPTION \
+  "Gnash "VERSION", the GNU SWF Player. \
+  Copyright © 2006, 2007, 2008, 2009, 2010 \
   <a href=\"http://www.fsf.org\">Free \
   Software Foundation</a>, Inc. <br> \
   Gnash comes with NO WARRANTY, to the extent permitted by law. \
@@ -59,9 +64,10 @@
   <a href=\"http://www.gnu.org/licenses/gpl.html\">GNU General Public \
   License</a>. For more information about Gnash, see <a \
   href=\"http://www.gnu.org/software/gnash/\"> \
-  http://www.gnu.org/software/gnash</a>. \
-  <br>\
-  Compatible Shockwave Flash "FLASH_VERSION
+  http://www.gnu.org/software/gnash</a>."
+
+#define MIME_TYPES_DESCRIPTION  MIME_TYPES_HANDLED":swf:"PLUGIN_NAME \
+    ";"FAKE_MIME_TYPE"::"FAKE_MIME_TYPE_DESCRIPTION
 
 #include "plugin.h" 
 #include "GnashSystemIOHeaders.h"
