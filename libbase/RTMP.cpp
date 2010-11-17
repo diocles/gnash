@@ -595,9 +595,10 @@ RTMP::sendPacket(RTMPPacket& packet)
     RTMPHeader& hr = packet.header;
 
     hr.dataSize = payloadSize(packet);
+    hr._timestamp = getUptime();
 
-    // This is the timestamp for our message.
-    const boost::uint32_t uptime = getUptime();
+    // Relative timestamp for our message.
+    boost::uint64_t delta = 0;
     
     // Look at the previous packet on the channel.
     bool prev = hasPacket(CHANNELS_OUT, hr.channel);
@@ -613,21 +614,16 @@ RTMP::sendPacket(RTMPPacket& packet)
     // is no previous packet.
     assert(hr.headerType == RTMP_PACKET_SIZE_LARGE);
 
-    if (!prev) {
-        hr._timestamp = uptime;
-    }
-    else {
-
+    if (prev) {
         const RTMPPacket& prevPacket = getPacket(CHANNELS_OUT, hr.channel);
         const RTMPHeader& oldh = prevPacket.header;
-        const boost::uint32_t prevTimestamp = oldh._timestamp;
 
-        // If this timestamp is later than the other and the difference fits
-        // in 3 bytes, encode a relative one.
-        if (uptime >= oldh._timestamp && uptime - prevTimestamp < 0xffffff) {
+        delta = hr._timestamp - oldh._timestamp;
+
+        // If the relative timestamp fits within 3 bytes, encode it.
+        if (delta < 0xffffff) {
             //log_debug("Shrinking to medium");
             hr.headerType = RTMP_PACKET_SIZE_MEDIUM;
-            hr._timestamp = uptime - prevTimestamp;
 
             // It can be still smaller if the data size is the same.
             if (oldh.dataSize == hr.dataSize &&
@@ -636,16 +632,15 @@ RTMP::sendPacket(RTMPPacket& packet)
                 hr.headerType = RTMP_PACKET_SIZE_SMALL;
                 // If there is no timestamp difference, the minimum size
                 // is possible.
-                if (hr._timestamp == 0) {
+                if (delta == 0) {
                     //log_debug("Shrinking to minimum");
                     hr.headerType = RTMP_PACKET_SIZE_MINIMUM;
                 }
             }
         }
         else {
-            // Otherwise we need an absolute one, so a large header.
+            // Otherwise we need an extended one, so a large header.
             hr.headerType = RTMP_PACKET_SIZE_LARGE;
-            hr._timestamp = uptime;
         }
     }
 
@@ -674,7 +669,7 @@ RTMP::sendPacket(RTMPPacket& packet)
     hSize += channelSize;
 
     /// Add space for absolute timestamp if necessary.
-    if (hr.headerType == RTMP_PACKET_SIZE_LARGE && hr._timestamp >= 0xffffff) {
+    if (hr.headerType > RTMP_PACKET_SIZE_MINIMUM && delta >= 0xffffff) {
         header -= 4;
         hSize += 4;
     }
@@ -699,15 +694,16 @@ RTMP::sendPacket(RTMPPacket& packet)
         if (channelSize == 2) *hptr++ = tmp >> 8;
     }
 
-    if (hr.headerType == RTMP_PACKET_SIZE_LARGE && hr._timestamp >= 0xffffff) {
-        // Signify that the extended timestamp field is present.
-        const boost::uint32_t t = 0xffffff;
-        hptr = encodeInt24(hptr, hend, t);
-    }
-    else if (hr.headerType != RTMP_PACKET_SIZE_MINIMUM) { 
-        // Write absolute or relative timestamp. Only minimal packets have
-        // no timestamp.
-        hptr = encodeInt24(hptr, hend, hr._timestamp);
+    if (hr.headerType > RTMP_PACKET_SIZE_MINIMUM) {
+        if (delta < 0xffffff) {
+            // Write absolute or relative timestamp. Only minimal
+            // packets have no timestamp.
+            hptr = encodeInt24(hptr, hend, delta);
+        } else {
+            // Signify that the extended timestamp field is present.
+            const boost::uint32_t t = 0xffffff;
+            hptr = encodeInt24(hptr, hend, t);
+        }
     }
 
     /// Encode dataSize and packet type for medium packets.
@@ -722,8 +718,8 @@ RTMP::sendPacket(RTMPPacket& packet)
     }
 
     // Encode extended absolute timestamp if needed.
-    if (hr.headerType == RTMP_PACKET_SIZE_LARGE && hr._timestamp >= 0xffffff) {
-        hptr += encodeInt32LE(hptr, hr._timestamp);
+    if (hr.headerType > RTMP_PACKET_SIZE_MINIMUM && delta >= 0xffffff) {
+        hptr = encodeInt32(hptr, hend, delta);
     }
 
     nSize = hr.dataSize;
@@ -783,10 +779,7 @@ RTMP::sendPacket(RTMPPacket& packet)
         log_debug( "Calling remote method %s", s);
     }
 
-    RTMPPacket& storedpacket = storePacket(CHANNELS_OUT, hr.channel, packet);
-
-    // Make it absolute for the next delta.
-    storedpacket.header._timestamp = uptime;
+    storePacket(CHANNELS_OUT, hr.channel, packet);
 
     return true;
 }
@@ -824,7 +817,7 @@ HandShaker::HandShaker(Socket& s)
     _sendBuf[0] = 0x03;
     
     // TODO: do this properly.
-    boost::uint32_t uptime = htonl(getUptime());
+    boost::uint32_t uptime = htonl(0);
 
     boost::uint8_t* ourSig = &_sendBuf.front() + 1;
     std::memcpy(ourSig, &uptime, 4);
