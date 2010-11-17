@@ -168,9 +168,8 @@ struct RTMPHeader
 
     /// The timestamp.
     //
-    /// This is encoded either as in the 3-byte relative timestamp field or the
-    /// 4 byte extended (absolute) timestamp field.
-    boost::uint32_t _timestamp;
+    /// This is stored as returned by clocktime::getTicks()
+    boost::uint64_t _timestamp;
 
     /// This seems to be used for NetStream.play.
     boost::uint32_t _streamID;

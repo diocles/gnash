@@ -23,20 +23,16 @@
 
 #include "GnashSystemNetHeaders.h"
 
-// Replace!!
-#ifndef _WIN32
-# include <sys/times.h>
-#else
-// TODO: use uptime properly on win32.
-# include <ctime>
-#endif
-
 #include "RTMP.h"
 #include "log.h"
 #include "AMF.h"
 #include "GnashAlgorithm.h"
 #include "URL.h"
 #include "ClockTime.h"
+
+namespace clocktime {
+     boost::uint64_t getTicks();
+}
 
 namespace gnash {
 namespace rtmp {
@@ -53,7 +49,6 @@ namespace {
     void handleClientBW(RTMP& r, const RTMPPacket& packet);
     
     void setupInvokePacket(RTMPPacket& packet);
-    boost::uint32_t getUptime();
 
     boost::int32_t decodeInt32LE(const boost::uint8_t* c);
     int encodeInt32LE(boost::uint8_t *output, int nVal);
@@ -595,10 +590,10 @@ RTMP::sendPacket(RTMPPacket& packet)
     RTMPHeader& hr = packet.header;
 
     hr.dataSize = payloadSize(packet);
-    hr._timestamp = getUptime();
+    hr._timestamp = clocktime::getTicks();
 
     // Relative timestamp for our message.
-    boost::uint64_t delta = 0;
+    boost::uint32_t delta = 0;
     
     // Look at the previous packet on the channel.
     bool prev = hasPacket(CHANNELS_OUT, hr.channel);
@@ -1173,20 +1168,6 @@ encodeInt32(boost::uint8_t *output, boost::uint8_t *outend, int nVal)
     output[1] = nVal >> 16;
     output[0] = nVal >> 24;
     return output + 4;
-}
-
-boost::uint32_t
-getUptime()
-{
-#if !defined(_WIN32) && !defined(__amigaos4__)
-    struct tms t;
-    return times(&t) * 1000 / sysconf(_SC_CLK_TCK);
-#elif defined(__amigaos4__)
-    struct tms t;
-    return times(&t) * 1000 / 50;
-#else
-    return std::clock() * 100 / CLOCKS_PER_SEC;   
-#endif
 }
 
 } // anonymous namespace
