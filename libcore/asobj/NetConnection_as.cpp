@@ -361,11 +361,6 @@ public:
             args.push_back(o);
 
             call(cb, "connect", args);
-
-            // Send bandwidth check; the pp appears to do this
-            // automatically.
-            sendServerBW(_rtmp);
-
         }
         
         boost::shared_ptr<SimpleBuffer> b = _rtmp.getMessage();
