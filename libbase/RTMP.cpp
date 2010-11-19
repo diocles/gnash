@@ -71,7 +71,7 @@ namespace {
 /// TODO: do this properly (it's currently not very random).
 struct RandomByte
 {
-    bool operator()() const {
+    boost::uint8_t operator()() const {
         return std::rand() % 256;
     }
 };
@@ -659,7 +659,7 @@ RTMP::sendPacket(RTMPPacket& packet)
   
     // The header size includes only a single channel/type. If we need more,
     // they have to be added on.
-    const int channelSize = hr.channel > 319 ? 3 : hr.channel > 63 ? 1 : 0;
+    const int channelSize = hr.channel > 319 ? 2 : hr.channel > 63 ? 1 : 0;
     header -= channelSize;
     hSize += channelSize;
 
@@ -689,7 +689,7 @@ RTMP::sendPacket(RTMPPacket& packet)
         if (channelSize == 2) *hptr++ = tmp >> 8;
     }
 
-    if (hr.headerType > RTMP_PACKET_SIZE_MINIMUM) {
+    if (nSize > 1) {
         if (delta < 0xffffff) {
             // Write absolute or relative timestamp. Only minimal
             // packets have no timestamp.
@@ -708,7 +708,7 @@ RTMP::sendPacket(RTMPPacket& packet)
     }
 
     /// Encode streamID for large packets.
-    if (hr.headerType == RTMP_PACKET_SIZE_LARGE) {
+    if (nSize > 8) {
         hptr += encodeInt32LE(hptr, hr._streamID);
     }
 
