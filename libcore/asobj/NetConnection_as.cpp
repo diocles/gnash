@@ -333,12 +333,12 @@ public:
             as_object* o = createObject(gl);
 
             const int flags = 0;
-            o->init_member("app", _url.path().substr(1), flags);
+            o->init_member("app", _url.path().substr(1) + '?' + _url.querystring(), flags);
 
             // TODO: check where it gets these data from.
             o->init_member("flashVer", getVM(_nc.owner()).getPlayerVersion(),
                     flags);
-            o->init_member("swfUrl", r.streamProvider().baseURL().str(),
+            o->init_member("swfUrl", r.streamProvider().originalURL().str(),
                     flags);
             o->init_member("tcUrl", _url.str(), flags);
 
@@ -348,7 +348,7 @@ public:
             o->init_member("audioCodecs", 3191.0, flags);
             o->init_member("videoCodecs", 252.0, flags);
             o->init_member("videoFunction", 1.0, flags);
-            o->init_member("pageUrl", as_value(), flags);
+            o->init_member("pageUrl", r.streamProvider().baseURL().str(), flags);
 
             // Set up the callback object.
             as_object* cb = createObject(getGlobal(_nc.owner()));
@@ -361,11 +361,6 @@ public:
             args.push_back(o);
 
             call(cb, "connect", args);
-
-            // Send bandwidth check; the pp appears to do this
-            // automatically.
-            sendServerBW(_rtmp);
-
         }
         
         boost::shared_ptr<SimpleBuffer> b = _rtmp.getMessage();

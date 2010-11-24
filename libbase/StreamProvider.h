@@ -118,6 +118,10 @@ public:
         return _base;
     }
 
+	const URL& originalURL() const {
+	    return _original;
+	}
+
 private:
 
     /// The current naming policy for cache files.
