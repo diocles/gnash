@@ -26,7 +26,7 @@ stop();
 
 endOfTest = function()
 {
-    totals(3);
+    totals(4);
     trace("ENDOFTEST");
     play();
 };
@@ -61,6 +61,7 @@ test1 = function(nc)
     	switch(arg.code) {
 	case "NetStream.Play.Start":
 	     // This is enough; end the test.
+	     pass("Playback started.");
 	     ns.close();
 	     endOfTest();
 	     break;
