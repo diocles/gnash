@@ -51,6 +51,7 @@ EXTRA_DIST = \
 	gotoFrame2Test.as \
 	intervalTest.as \
 	red5test.as \
+	red5ofla.as \
 	remoting.as \
 	rtmpytest.as \
 	widgets.as \
@@ -285,7 +286,8 @@ if ENABLE_HTTP_TESTSUITE
 check_SCRIPTS += remotingTestRunner
 endif
 if ENABLE_RED5_TESTING
-check_SCRIPTS += red5test-runner
+check_SCRIPTS += red5test-runner \
+	red5ofla-runner
 endif
 if ENABLE_RTMPY_TESTING
 check_SCRIPTS += rtmpytest-runner
@@ -1508,6 +1510,15 @@ red5test-runner: $(srcdir)/../generic-testrunner.sh red5test.swf
 	sh $(srcdir)/../generic-testrunner.sh -c "ENDOFTEST" $(top_builddir) red5test.swf > $@
 	chmod 755 $@
 
+red5ofla.swf: red5ofla.as Dejagnu.swf Makefile ../actionscript.all/check.as ../actionscript.all/utils.as
+	$(MAKESWF) -n network -r12 -o $@ -v7 -DRED5_HOST='\"$(RED5_HOST)\"' \
+		-DUSE_DEJAGNU_MODULE -DOUTPUT_VERSION=7 Dejagnu.swf $(srcdir)/red5ofla.as \
+		$(srcdir)/../actionscript.all/dejagnu_so_fini.as
+
+red5ofla-runner: $(srcdir)/../generic-testrunner.sh red5ofla.swf
+	sh $(srcdir)/../generic-testrunner.sh -c "ENDOFTEST" $(top_builddir) red5ofla.swf > $@
+	chmod 755 $@
+
 rtmpytest.swf: rtmpytest.as Dejagnu.swf Makefile ../actionscript.all/check.as ../actionscript.all/utils.as
 	$(MAKESWF) -n network -r12 -o $@ -v7 -DRTMPY_HOST='\"$(RTMPY_HOST)\"' \
 		-DUSE_DEJAGNU_MODULE -DOUTPUT_VERSION=7 Dejagnu.swf $(srcdir)/rtmpytest.as \
@@ -1757,7 +1768,8 @@ if ENABLE_HTTP_TESTSUITE
 TEST_CASES += remotingTestRunner
 endif
 if ENABLE_RED5_TESTING
-TEST_CASES += red5test-runner
+TEST_CASES += red5test-runner \
+	red5ofla-runner
 endif
 if ENABLE_RTMPY_TESTING
 TEST_CASES += rtmpytest-runner
